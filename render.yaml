@@ -1,0 +1,12 @@
+# One web service: the Node server also serves the built client.
+services:
+  - type: web
+    name: quizdrop
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
