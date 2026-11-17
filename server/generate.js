@@ -4,7 +4,7 @@ import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { z } from 'zod'
 
 export const MAX_CHARS = 120_000
-const MODEL = process.env.QUIZ_MODEL || 'claude-opus-5-5'
+const MODEL = process.env.QUIZ_MODEL || 'claude-haiku-5-5'
 const LETTERS = ['A', 'B', 'C', 'D']
 
 const Quiz = z.object({
