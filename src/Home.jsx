@@ -2,18 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { ACCEPT, extractText } from './extract.js'
 import { sample } from './sample.js'
 import { go, LETTERS } from './bits.jsx'
+import { api } from './useRoom.js'
 
 const DRAFT = 'quizdrop:draft'
 
-async function api(path, body) {
-  const res = await fetch(path, body && { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.')
-  return data
-}
-
 export async function openRoom(quiz) {
-  const { code, hostKey } = await api('/api/rooms', quiz)
+  const { code, hostKey } = await api('/api/rooms', { body: quiz })
   sessionStorage.setItem(`quizdrop:host:${code}`, JSON.stringify({ hostKey, quiz }))
   go(`/host/${code}`)
 }
@@ -73,7 +67,7 @@ function DropZone({ onQuiz }) {
       setBusy('Reading your slides')
       const { text, slides } = await extractText(file)
       setBusy(`Writing ${count} questions from ${slides} ${slides === 1 ? 'page' : 'slides'}`)
-      const quiz = await api('/api/generate', { text, count })
+      const quiz = await api('/api/generate', { body: { text, count } })
       onQuiz(quiz)
     } catch (err) {
       setError(err.message)

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCountdown, useRoom } from './useRoom.js'
 import { openRoom } from './Home.jsx'
-import { Dead, LETTERS, Shell, Tick, Timer, TONES } from './bits.jsx'
+import { Dead, LETTERS, Ready, Shell, Tick, Timer, TONES } from './bits.jsx'
 
 function Lobby({ state, send }) {
   const joinAt = location.host
@@ -14,7 +14,7 @@ function Lobby({ state, send }) {
         {state.players.map((p) => <li key={p.id} className={p.connected ? '' : 'away'}>{p.name}</li>)}
       </ul>
       {!state.players.length && <p className="hint">Waiting for people to join.</p>}
-      <button className="btn big" onClick={() => send({ t: 'start' })} disabled={!state.players.length}>
+      <button className="btn big" onClick={() => send('host', { action: 'start', from: state.index })} disabled={!state.players.length}>
         Start{state.players.length ? ` with ${state.players.length}` : ''}
       </button>
     </main>
@@ -58,7 +58,7 @@ function Question({ state, send }) {
         <div className="after">
           <div className="after-left">
             {state.reveal.explain && <p className="why">{state.reveal.explain}</p>}
-            <button className="btn big" onClick={() => send({ t: 'next' })} autoFocus>
+            <button className="btn big" onClick={() => send('host', { action: 'next', from: state.index })} autoFocus>
               {last ? 'See who won' : 'Next question'}
             </button>
           </div>
@@ -69,7 +69,7 @@ function Question({ state, send }) {
           </ol>
         </div>
       ) : (
-        <button className="link skip" onClick={() => send({ t: 'skip' })}>end this question early</button>
+        <button className="link skip" onClick={() => send('host', { action: 'skip', from: state.index })}>end this question early</button>
       )}
     </main>
   )
@@ -123,19 +123,20 @@ function Final({ state, quiz }) {
 
 export default function Host({ code }) {
   const [saved] = useState(() => JSON.parse(sessionStorage.getItem(`quizdrop:host:${code}`) || 'null'))
-  const { state, status, error, send } = useRoom(() => (saved ? { t: 'host', code, hostKey: saved.hostKey } : null))
+  const seat = useMemo(() => (saved ? { key: saved.hostKey } : null), [saved])
+  const { state, status, error, send } = useRoom(code, seat)
 
   // Space moves things along, so the host can run it from the keyboard.
   useEffect(() => {
     const onKey = (event) => {
       if (event.key !== ' ' || event.target.closest('button, a, input')) return
       event.preventDefault()
-      if (state?.phase === 'lobby') send({ t: 'start' })
-      if (state?.phase === 'reveal') send({ t: 'next' })
+      if (state?.phase === 'lobby') send('host', { action: 'start', from: state.index })
+      if (state?.phase === 'reveal') send('host', { action: 'next', from: state.index })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [state?.phase, send])
+  }, [state?.phase, state?.index, send])
 
   if (!saved) return <Dead message="This game was started somewhere else." />
   if (error?.fatal) return <Dead message={error.error} />
@@ -144,6 +145,7 @@ export default function Host({ code }) {
   return (
     <Shell status={status} error={error}>
       {state.phase === 'lobby' && <Lobby state={state} send={send} />}
+      {state.phase === 'ready' && <Ready state={state} />}
       {(state.phase === 'question' || state.phase === 'reveal') && <Question state={state} send={send} />}
       {state.phase === 'final' && <Final state={state} quiz={saved.quiz} />}
     </Shell>

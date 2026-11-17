@@ -1,4 +1,6 @@
 // Small pieces the host and player screens both use.
+import { useCountdown } from './useRoom.js'
+
 export const LETTERS = ['A', 'B', 'C', 'D']
 export const TONES = ['yellow', 'blue', 'pink', 'green']
 
@@ -13,6 +15,18 @@ export function Timer({ ms, limitMs }) {
       <div className="timer-line"><i style={{ transform: `scaleX(${limitMs ? ms / limitMs : 0})` }} /></div>
       <span className="timer-num">{seconds}</span>
     </div>
+  )
+}
+
+/** The short pause before a question, so every phone has it before the clock starts. */
+export function Ready({ state }) {
+  const ms = useCountdown(state)
+  return (
+    <main className="page center ready">
+      <p className="kicker">Question {state.index + 1} of {state.total}</p>
+      <p className="count-in" key={Math.ceil(ms / 1000)}>{Math.max(1, Math.ceil(ms / 1000))}</p>
+      <p className="hint">Get ready</p>
+    </main>
   )
 }
 

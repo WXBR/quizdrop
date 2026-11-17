@@ -7,7 +7,6 @@ export default defineConfig({
     host: true, // so phones on the same wifi can join during development
     proxy: {
       '/api': 'http://localhost:3001',
-      '/ws': { target: 'ws://localhost:3001', ws: true },
     },
   },
 })

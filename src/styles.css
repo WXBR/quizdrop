@@ -219,6 +219,8 @@ input:not([type='radio']):focus, textarea:focus, select:focus { border-color: va
 .step .place { margin-top: auto; font: 700 3rem/1 var(--hand); opacity: 0.55; }
 @keyframes rise { from { transform: translateY(40px); opacity: 0; } }
 
+.count-in { font: 700 clamp(7rem, 26vw, 14rem)/1 var(--hand); animation: pop 0.35s ease-out both; }
+
 /* ---------- the phone ---------- */
 
 .phone {

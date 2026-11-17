@@ -1,19 +1,33 @@
-import { useState } from 'react'
-import { useCountdown, useRoom } from './useRoom.js'
-import { Dead, LETTERS, ordinal, Shell, Tick, Timer, TONES } from './bits.jsx'
+import { useEffect, useState } from 'react'
+import { api, useCountdown, useRoom } from './useRoom.js'
+import { Dead, LETTERS, ordinal, Ready, Shell, Tick, Timer, TONES } from './bits.jsx'
 
-function NameForm({ code, onSubmit, error, ready }) {
+function NameForm({ code, onSeat }) {
   const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      const { id, key } = await api(`/api/rooms/${code}/join`, { body: { name } })
+      onSeat({ id, key })
+    } catch (err) {
+      setError(err.message)
+      setBusy(false)
+    }
+  }
   return (
     <main className="page center">
-      <form className="join" onSubmit={(e) => { e.preventDefault(); onSubmit(name) }}>
+      <form className="join" onSubmit={submit}>
         <p className="kicker">Room {code}</p>
         <label htmlFor="name">What should we call you?</label>
         <div className="row">
           <input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={16} autoComplete="off" autoFocus placeholder="Your name" />
-          <button className="btn" disabled={!name.trim() || !ready}>I’m in</button>
+          <button className="btn" disabled={!name.trim() || busy}>I’m in</button>
         </div>
-        {error && <p className="error" role="alert">{error.error}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
       </form>
     </main>
   )
@@ -24,6 +38,11 @@ function Answering({ state, send }) {
   const [sent, setSent] = useState(null) // shows the pick straight away, before the server confirms
   const picked = state.choice ?? sent
   const shown = state.phase === 'reveal'
+
+  const pick = async (i) => {
+    setSent(i)
+    if (!(await send('answer', { choice: i }))) setSent(null)
+  }
 
   return (
     <main className="phone">
@@ -41,7 +60,7 @@ function Answering({ state, send }) {
             className={`note ${TONES[i]}${picked === i ? ' mine' : ''}${shown && i === state.reveal.answer ? ' right' : ''}`}
             disabled={shown || picked !== null || ms <= 0}
             aria-pressed={picked === i}
-            onClick={() => send({ t: 'answer', choice: i }) && setSent(i)}
+            onClick={() => pick(i)}
           >
             <span className="letter">{LETTERS[i]}</span>
             <span className="option">{option}</span>
@@ -71,22 +90,19 @@ function Answering({ state, send }) {
 export default function Player({ code }) {
   const storeKey = `quizdrop:player:${code}`
   const [seat, setSeat] = useState(() => JSON.parse(sessionStorage.getItem(storeKey) || 'null'))
+  const { state, status, error, send } = useRoom(code, seat)
 
-  const { state, status, error, send } = useRoom(
-    () => (seat ? { t: 'rejoin', code, id: seat.id, key: seat.key } : null),
-    (message) => {
-      if (message.t === 'joined') {
-        const next = { id: message.id, key: message.key }
-        sessionStorage.setItem(storeKey, JSON.stringify(next))
-        setSeat(next)
-      }
-      // A seat the server no longer knows about is useless, so forget it.
-      if (message.t === 'error' && message.fatal) sessionStorage.removeItem(storeKey)
-    },
-  )
+  const sit = (next) => {
+    sessionStorage.setItem(storeKey, JSON.stringify(next))
+    setSeat(next)
+  }
+  // A seat the server no longer knows about is useless, so forget it.
+  useEffect(() => {
+    if (error?.fatal) sessionStorage.removeItem(storeKey)
+  }, [error, storeKey])
 
   if (error?.fatal) return <Dead message={error.error} />
-  if (!seat) return <NameForm code={code} error={error} ready={status === 'open'} onSubmit={(name) => send({ t: 'join', code, name })} />
+  if (!seat) return <NameForm code={code} onSeat={sit} />
   if (!state) return <main className="page center"><p className="hint">Joining…</p></main>
 
   return (
@@ -99,6 +115,7 @@ export default function Player({ code }) {
           <p className="hint">{state.count} {state.count === 1 ? 'player' : 'players'} so far</p>
         </main>
       )}
+      {state.phase === 'ready' && <Ready state={state} />}
       {(state.phase === 'question' || state.phase === 'reveal') && <Answering key={state.index} state={state} send={send} />}
       {state.phase === 'final' && (
         <main className="page center">
