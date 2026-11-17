@@ -7,6 +7,15 @@ const TTL_SECONDS = 2 * 60 * 60
 const roomKey = (code) => `quizdrop:room:${code}`
 const quizKey = (code) => `quizdrop:quiz:${code}`
 
+// With automatic parsing off, the client hands back a hash as a flat
+// [name, value, name, value] list instead of an object.
+function toObject(reply) {
+  if (!Array.isArray(reply)) return reply || {}
+  const out = {}
+  for (let i = 0; i < reply.length; i += 2) out[reply[i]] = reply[i + 1]
+  return out
+}
+
 function redisStore(redis) {
   // A quiz never changes once its room exists, so each warm function keeps a copy
   // instead of fetching it again on every poll.
@@ -22,8 +31,8 @@ function redisStore(redis) {
       return true
     },
     async read(code) {
-      const fields = await redis.hgetall(roomKey(code))
-      if (!fields?.meta) return null
+      const fields = toObject(await redis.hgetall(roomKey(code)))
+      if (!fields.meta) return null
       if (!quizzes.has(code)) {
         const quiz = await redis.get(quizKey(code))
         if (!quiz) return null

@@ -8,7 +8,8 @@
     "dev": "concurrently -n server,client -c blue,green \"node --env-file-if-exists=.env --watch server/dev.js\" \"vite\"",
     "build": "vite build",
     "start": "node --env-file-if-exists=.env server/dev.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:redis": "node --env-file=.env.local node_modules/vitest/vitest.mjs run"
   },
   "engines": {
     "node": ">=22"

@@ -57,9 +57,13 @@ describe('points', () => {
 // The rest plays real games through the HTTP API, with the in-memory store and
 // a clock the test controls. Each request is handled from stored facts alone,
 // the same way it is in production.
+// Runs against real Redis when its settings are present (npm run test:redis),
+// because a store that works in memory can still be wrong against the real thing.
+const useRedis = Boolean(process.env.TEST_REDIS && process.env.KV_REST_API_URL)
+
 async function setup() {
-  let now = 1_000_000
-  const app = createApp({ store: createStore({}), clock: () => now, generateReady: () => false })
+  let now = useRedis ? Date.now() : 1_000_000
+  const app = createApp({ store: createStore(useRedis ? process.env : {}), clock: () => now, generateReady: () => false })
   const server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s))
   })
