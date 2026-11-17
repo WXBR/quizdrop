@@ -2,6 +2,8 @@
 
 Drop in your lecture slides and get a live quiz the whole class can join from their phones.
 
+Try it: https://quizdrop-gamma.vercel.app
+
 I study by turning slides into questions, and it works better with other people in the room. So this takes a PDF or PowerPoint, writes the questions, and runs them as a timed game. One screen shows the question, everyone answers on their phone, and there's a leaderboard after each one.
 
 ![The lobby with a room code and four players](docs/lobby.png)
