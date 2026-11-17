@@ -9,7 +9,7 @@ import { createStore } from './store.js'
 
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // no I or O, they read as 1 and 0
 const SEEN_EVERY_MS = 4000
-const DAILY_GENERATE_CAP = Number(process.env.GENERATE_DAILY_CAP) || 60
+const DAILY_GENERATE_CAP = Number(process.env.GENERATE_DAILY_CAP) || 15
 
 const token = () => randomBytes(16).toString('hex')
 const same = (given, real) => {
@@ -67,7 +67,7 @@ export function createApp({ store = createStore(), clock = Date.now, generate = 
 
   app.get('/api/health', (req, res) => res.json({ ok: true, store: store.kind, generate: generateReady() }))
 
-  app.post('/api/generate', limit('generate', 6, 600), async (req, res) => {
+  app.post('/api/generate', limit('generate', 3, 3600), async (req, res) => {
     if (!generateReady()) return res.status(503).json({ error: 'This server has no API key set, so it can’t write questions. You can still play the sample quiz.' })
     const text = typeof req.body?.text === 'string' ? req.body.text.trim() : ''
     const count = Math.min(20, Math.max(3, Number(req.body?.count) || 10))
